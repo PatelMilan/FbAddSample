@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.bumptech.glide.Glide;
 import com.csiw.fbadd.R;
+import com.csiw.fbadd.interfaces.ImageClickListener;
 import com.csiw.fbadd.model.ImageResponse;
 import com.facebook.ads.AdSize;
 import com.facebook.ads.AdView;
@@ -28,12 +30,10 @@ public class ImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     private Context mContext;
     private List<ImageResponse> mImageResponseList;
-    private List<String> mRectAd;
 
     public ImageAdapter(Context mContext, List<ImageResponse> mImageResponseList) {
         this.mContext = mContext;
         this.mImageResponseList = mImageResponseList;
-        mRectAd = new ArrayList<>();
     }
 
     @NonNull
@@ -67,7 +67,7 @@ public class ImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        return mImageResponseList.size() + mRectAd.size();
+        return mImageResponseList.size() + ((int) mImageResponseList.size() / 4);
     }
 
     @Override
@@ -87,23 +87,22 @@ public class ImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             AdView adView = new AdView(mContext, mContext.getString(R.string.rectangle_placement_id), AdSize.RECTANGLE_HEIGHT_250);
             adHolder.mRectangleAd.addView(adView);
             adView.loadAd();
-            if (!adView.isAdInvalidated()) {
-                mRectAd.add(adView.isAdInvalidated() + "");
-            }
+
         } else {
             ImageAdapter.ContactHolder contactHolder = (ImageAdapter.ContactHolder) holder;
-            int index = position - (position / AD_FREQUENCY) - 1;
-
-           /* Glide.with(mContext).load(mImageResponseList.get(index).getImgUrl())
-                    .placeholder(R.mipmap.ic_launcher_round)
-                    .error(R.mipmap.ic_launcher_round)
-                    .into(contactHolder.ivIcon);*/
+            final int index = position - (position / AD_FREQUENCY) - 1;
 
             Glide.with(mContext).load(mImageResponseList.get(index).getImgUrl())
                     .thumbnail(Glide.with(mContext).load(R.raw.ic_loading))
                     .fitCenter()
                     .error(R.drawable.ic_image_error)
                     .into(contactHolder.ivIcon);
+            contactHolder.setImageClickListener(new ImageClickListener() {
+                @Override
+                public void onItemClick(View view, int position) {
+                    Toast.makeText(mContext, "Image_ID"+mImageResponseList.get(index).getImgUrl()+"POS"+index, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
@@ -116,12 +115,21 @@ public class ImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
     }
 
-    public static class ContactHolder extends RecyclerView.ViewHolder {
+    public static class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         ImageView ivIcon;
-
+        ImageClickListener mImageClickListener;
         ContactHolder(@NonNull View view) {
             super(view);
             ivIcon = view.findViewById(R.id.iv_icon);
+            ivIcon.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            this.mImageClickListener.onItemClick(view,getLayoutPosition());
+        }
+        void setImageClickListener(ImageClickListener mImageClickListener){
+            this.mImageClickListener = mImageClickListener;
         }
     }
 }
